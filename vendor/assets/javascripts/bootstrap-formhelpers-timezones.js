@@ -17,155 +17,198 @@
  * limitations under the License.
  * ========================================================== */
 
- var BFHTimezonesList;
- 
- !function ($) {
++function ($) {
 
-  "use strict";
+  'use strict';
 
 
- /* TIMEZONES CLASS DEFINITION
-  * ====================== */
+  /* TIMEZONES CLASS DEFINITION
+   * ====================== */
 
   var BFHTimezones = function (element, options) {
-    this.options = $.extend({}, $.fn.bfhtimezones.defaults, options)
-    this.$element = $(element)
-    
-    if (this.$element.is("select")) {
-      this.addTimezones()
+    this.options = $.extend({}, $.fn.bfhtimezones.defaults, options);
+    this.$element = $(element);
+
+    if (this.$element.is('select')) {
+      this.addTimezones();
     }
-    
-    if (this.$element.hasClass("bfh-selectbox")) {
-      this.addBootstrapTimezones()
+
+    if (this.$element.hasClass('bfh-selectbox')) {
+      this.addBootstrapTimezones();
     }
-  }
+  };
 
   BFHTimezones.prototype = {
 
-    constructor: BFHTimezones
+    constructor: BFHTimezones,
 
-    , addTimezones: function () {
-      var country = this.options.country
+    addTimezones: function () {
+      var country,
+          $country;
 
-      if (country !== "") {
-        var formObject = this.$element.closest('form')
-        var countryObject = formObject.find('#' + country)
+      country = this.options.country;
 
-        if (countryObject.length !== 0) {
-          country = countryObject.val()
-          countryObject.on('change.bfhcountries.data-api', {timezoneObject: this}, this.changeCountry)
+      if (country !== '') {
+        $country = $(document).find('#' + country);
+
+        if ($country.length !== 0) {
+          country = $country.val();
+          $country.on('change', {timezone: this}, this.changeCountry);
         }
       }
-      
-      this.loadTimezones(country)
-    }
-    
-    , loadTimezones: function (country) {
-      var value = this.options.timezone
-      
-      this.$element.html('')
-      this.$element.append('<option value=""></option>')
-      for (var timezone in BFHTimezonesList[country]) {
-        this.$element.append('<option value="' + timezone + '">' + BFHTimezonesList[country][timezone] + '</option>')
+
+      this.loadTimezones(country);
+    },
+
+    loadTimezones: function (country) {
+      var value,
+          timezone;
+
+      value = this.options.timezone;
+
+      this.$element.html('');
+
+      if (this.options.blank === true) {
+        this.$element.append('<option value=""></option>');
       }
-      
-      this.$element.val(value)
-    }
-    
-    , changeCountry: function (e) {
-        var $this = $(this)
-        var timezoneObject = e.data.timezoneObject
-        var country = $this.val()
-        
-        timezoneObject.loadTimezones(country)
-    }
-    
-    , addBootstrapTimezones: function() {
-      var country = this.options.country
-      
-      if (country !== "") {
-        var formObject = this.$element.closest('form')
-        var countryObject = formObject.find('#' + country)
-        
-        if (countryObject.length !== 0) {
-          country = countryObject.find('input[type="hidden"]').val()
-          countryObject.find('input[type="hidden"]').on('change.bfhcountries.data-api', {timezoneObject: this}, this.changeBootstrapCountry)
+
+      for (timezone in BFHTimezonesList[country]) {
+        if (BFHTimezonesList[country].hasOwnProperty(timezone)) {
+          this.$element.append('<option value="' + timezone + '">' + BFHTimezonesList[country][timezone] + '</option>');
         }
       }
-      
-      this.loadBootstrapTimezones(country)
-    }
-    
-    , loadBootstrapTimezones: function(country) {
-      var $input
-      , $toggle
-      , $options
-      
-      var value = this.options.timezone
-      
-      $input = this.$element.find('input[type="hidden"]')
-      $toggle = this.$element.find('.bfh-selectbox-option')
-      $options = this.$element.find('[role=option]')
-      
-      $options.html('')
-      $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>')
-      for (var timezone in BFHTimezonesList[country]) {
-        $options.append('<li><a tabindex="-1" href="#" data-option="' + timezone + '">' + BFHTimezonesList[country][timezone] + '</a></li>')
+
+      this.$element.val(value);
+    },
+
+    changeCountry: function (e) {
+      var $this,
+          $timezone,
+          country;
+
+      $this = $(this);
+      $timezone = e.data.timezone;
+      country = $this.val();
+
+      $timezone.loadTimezones(country);
+    },
+
+    addBootstrapTimezones: function() {
+      var country,
+          $country;
+
+      country = this.options.country;
+
+      if (country !== '') {
+        $country = $(document).find('#' + country);
+
+        if ($country.length !== 0) {
+          country = $country.find('input[type="hidden"]').val();
+          $country.on('change.bfhselectbox', {timezone: this}, this.changeBootstrapCountry);
+        }
       }
-      
-      $toggle.data('option', value)
-      if (typeof BFHTimezonesList[country][value] == "undefined") {
-        $toggle.html('')
-      } else {
-        $toggle.html(value)
+
+      this.loadBootstrapTimezones(country);
+    },
+
+    loadBootstrapTimezones: function(country) {
+      var $input,
+          $toggle,
+          $options,
+          value,
+          timezone;
+
+      value = this.options.timezone;
+      $input = this.$element.find('input[type="hidden"]');
+      $toggle = this.$element.find('.bfh-selectbox-option');
+      $options = this.$element.find('[role=option]');
+
+      $options.html('');
+
+      if (this.options.blank === true) {
+        $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>');
       }
-      
-      $input.val(value)
+
+      for (timezone in BFHTimezonesList[country]) {
+        if (BFHTimezonesList[country].hasOwnProperty(timezone)) {
+          $options.append('<li><a tabindex="-1" href="#" data-option="' + timezone + '">' + BFHTimezonesList[country][timezone] + '</a></li>');
+        }
+      }
+
+      this.$element.val(value);
+    },
+
+    changeBootstrapCountry: function (e) {
+      var $this,
+          $timezone,
+          country;
+
+      $this = $(this);
+      $timezone = e.data.timezone;
+      country = $this.val();
+
+      $timezone.loadBootstrapTimezones(country);
     }
-    
-    , changeBootstrapCountry: function (e) {
-        var $this = $(this)
-        var timezoneObject = e.data.timezoneObject
-        var country = $this.val()
-        
-        timezoneObject.loadBootstrapTimezones(country)
-    }
 
-  }
+  };
 
 
- /* TIMEZONES PLUGIN DEFINITION
-  * ======================= */
+  /* TIMEZONES PLUGIN DEFINITION
+   * ======================= */
+
+  var old = $.fn.bfhtimezones;
 
   $.fn.bfhtimezones = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhtimezones')
-        , options = typeof option == 'object' && option
-        
-      if (!data) $this.data('bfhtimezones', (data = new BFHTimezones(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+      var $this,
+          data,
+          options;
 
-  $.fn.bfhtimezones.Constructor = BFHTimezones
+      $this = $(this);
+      data = $this.data('bfhtimezones');
+      options = typeof option === 'object' && option;
+
+      if (!data) {
+        $this.data('bfhtimezones', (data = new BFHTimezones(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
+
+  $.fn.bfhtimezones.Constructor = BFHTimezones;
 
   $.fn.bfhtimezones.defaults = {
-    country: "",
-    timezone: ""
-  }
-  
+    country: '',
+    timezone: '',
+    blank: true
+  };
 
- /* TIMEZONES DATA-API
-  * ============== */
 
-  $(window).on('load', function () {
+  /* TIMEZONES NO CONFLICT
+   * ========================== */
+
+  $.fn.bfhtimezones.noConflict = function () {
+    $.fn.bfhtimezones = old;
+    return this;
+  };
+
+
+  /* TIMEZONES DATA-API
+   * ============== */
+
+  $(document).ready( function () {
     $('form select.bfh-timezones, div.bfh-timezones').each(function () {
-      var $timezones = $(this)
+      var $timezones;
 
-      $timezones.bfhtimezones($timezones.data())
-    })
-  })
+      $timezones = $(this);
 
+      if ($timezones.hasClass('bfh-selectbox')) {
+        $timezones.bfhselectbox($timezones.data());
+      }
+      $timezones.bfhtimezones($timezones.data());
+    });
+  });
 
 }(window.jQuery);

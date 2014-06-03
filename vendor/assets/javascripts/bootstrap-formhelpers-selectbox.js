@@ -17,227 +17,331 @@
  * limitations under the License.
  * ========================================================== */
 
-!function ($) {
++function ($) {
 
-  "use strict";
+  'use strict';
 
 
- /* SELECTBOX CLASS DEFINITION
-  * ========================= */
+  /* SELECTBOX CLASS DEFINITION
+   * ========================= */
 
-  var toggle = '[data-toggle=bfh-selectbox]'
-    , BFHSelectBox = function (element) {
-      }
+  var toggle = '[data-toggle=bfh-selectbox]',
+      BFHSelectBox = function (element, options) {
+        this.options = $.extend({}, $.fn.bfhselectbox.defaults, options);
+        this.$element = $(element);
+
+        this.initSelectBox();
+      };
 
   BFHSelectBox.prototype = {
 
-    constructor: BFHSelectBox
+    constructor: BFHSelectBox,
 
-  , toggle: function (e) {
-      var $this = $(this)
-        , $parent
-        , isActive
+    initSelectBox: function () {
+      var options;
 
-      if ($this.is('.disabled, :disabled')) return false
+      options = '';
+      this.$element.find('div').each(function() {
+        options = options + '<li><a tabindex="-1" href="#" data-option="' + $(this).data('value') + '">' + $(this).html() + '</a></li>';
+      });
 
-      $parent = getParent($this)
+      this.$element.html(
+        '<input type="hidden" name="' + this.options.name + '" value="">' +
+		'<a class="bfh-selectbox-toggle ' + this.options.input + '" role="button" data-toggle="bfh-selectbox" href="#">' +
+		'<span class="bfh-selectbox-option"></span>' +
+		'<span class="' + this.options.icon + ' selectbox-caret"></span>' +
+		'</a>' +
+		'<div class="bfh-selectbox-options">' +
+		'<div role="listbox">' +
+		'<ul role="option">' +
+		'</ul>' +
+		'</div>' +
+		'</div>'
+      );
 
-      isActive = $parent.hasClass('open')
+      this.$element.find('[role=option]').html(options);
 
-      clearMenus()
+      if (this.options.filter === true) {
+        this.$element.find('.bfh-selectbox-options').prepend('<div class="bfh-selectbox-filter-container"><input type="text" class="bfh-selectbox-filter form-control"></div>');
+      }
+
+      this.$element.val(this.options.value);
+
+      this.$element
+        .on('click.bfhselectbox.data-api touchstart.bfhselectbox.data-api', toggle, BFHSelectBox.prototype.toggle)
+		.on('keydown.bfhselectbox.data-api', toggle + ', [role=option]' , BFHSelectBox.prototype.keydown)
+		.on('mouseenter.bfhselectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter)
+		.on('click.bfhselectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.select)
+		.on('click.bfhselectbox.data-api', '.bfh-selectbox-filter', function () { return false; })
+		.on('propertychange.bfhselectbox.data-api change.bfhselectbox.data-api input.bfhselectbox.data-api paste.bfhselectbox.data-api', '.bfh-selectbox-filter', BFHSelectBox.prototype.filter);
+    },
+
+    toggle: function (e) {
+      var $this,
+          $parent,
+          isActive;
+
+      $this = $(this);
+      $parent = getParent($this);
+
+      if ($parent.is('.disabled') || $parent.attr('disabled') !== undefined) {
+        return true;
+      }
+
+      isActive = $parent.hasClass('open');
+
+      clearMenus();
 
       if (!isActive) {
-        $parent.toggleClass('open')
-        
-        $parent.find('[role=option] > li > [data-option="' + $this.find('.bfh-selectbox-option').data('option') + '"]').focus()
+        $parent.trigger(e = $.Event('show.bfhselectbox'));
+
+        if (e.isDefaultPrevented()) {
+          return true;
+        }
+
+        $parent
+          .toggleClass('open')
+          .trigger('shown.bfhselectbox')
+          .find('[role=option] > li > [data-option="' + $parent.val() + '"]').focus();
       }
 
-      return false
-    }
+      return false;
+    },
 
-  , filter: function(e) {
-    var $this
-      , $parent
-      , $items
-      
-    $this = $(this)
-    
-    $parent = $this.closest('.bfh-selectbox')
-    
-    $items = $('[role=option] li a', $parent)
-    
-    $items.hide()
-    
-    $items.filter(function() { return ($(this).text().toUpperCase().indexOf($this.val().toUpperCase()) != -1) }).show()
-  }
-  
-  , keydown: function (e) {
-      var $this
-        , $items
-        , $active
-        , $parent
-        , isActive
-        , index
+    filter: function() {
+      var $this,
+          $parent,
+          $items;
 
-      if (!/(38|40|27)/.test(e.keyCode) && !/[A-z]/.test(String.fromCharCode(e.which))) return
+      $this = $(this);
+      $parent = getParent($this);
 
-      $this = $(this)
-
-      e.preventDefault()
-      e.stopPropagation()
-
-      if ($this.is('.disabled, :disabled')) return false
-
-      $parent = $this.closest('.bfh-selectbox')
-
-      isActive = $parent.hasClass('open')
-
-      if (!isActive || (isActive && e.keyCode == 27)) return $this.click()
-
-      $items = $('[role=option] li a', $parent).filter(':visible')
-
-      if (!$items.length) return
-
-      $('body').off('mouseenter.bfh-selectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter)
-      
-      index = $items.index($items.filter(':focus'))
-
-      if (e.keyCode == 38 && index > 0) index--                                        // up
-      if (e.keyCode == 40 && index < $items.length - 1) index++                        // down
-      if (/[A-z]/.test(String.fromCharCode(e.which))) {
-        var $subItems = $items.filter(function() { return ($(this).text().charAt(0).toUpperCase() == String.fromCharCode(e.which)) })
-        var selectedIndex = $subItems.index($subItems.filter(':focus'))
-        if (!~selectedIndex) index = $items.index($subItems)
-        else if (selectedIndex >= $subItems.length - 1) index = $items.index($subItems)
-        else index++
-      }
-      if (!~index) index = 0
-      
+      $items = $('[role=option] li a', $parent);
       $items
-        .eq(index)
-        .focus()
-        
-      $('body').on('mouseenter.bfh-selectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter)
+        .hide()
+        .filter(function() {
+          return ($(this).text().toUpperCase().indexOf($this.val().toUpperCase()) !== -1);
+        })
+        .show();
+    },
+
+    keydown: function (e) {
+      var $this,
+          $items,
+          $parent,
+          $subItems,
+          isActive,
+          index,
+          selectedIndex;
+
+      if (!/(38|40|27)/.test(e.keyCode)) {
+        return true;
+      }
+
+      $this = $(this);
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      $parent = getParent($this);
+      isActive = $parent.hasClass('open');
+
+      if (!isActive || (isActive && e.keyCode === 27)) {
+        if (e.which === 27) {
+          $parent.find(toggle).focus();
+        }
+
+        return $this.click();
+      }
+
+      $items = $('[role=option] li:not(.divider) a:visible', $parent);
+
+      if (!$items.length) {
+        return true;
+      }
+
+      $('body').off('mouseenter.bfh-selectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter);
+      index = $items.index($items.filter(':focus'));
+
+      if (e.keyCode === 38 && index > 0) {
+        index = index - 1;
+      }
+
+      if (e.keyCode === 40 && index < $items.length - 1) {
+        index = index + 1;
+      }
+
+      if (!index) {
+        index = 0;
+      }
+
+      $items.eq(index).focus();
+      $('body').on('mouseenter.bfh-selectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter);
+    },
+
+    mouseenter: function () {
+      var $this;
+
+      $this = $(this);
+
+      $this.focus();
+    },
+
+    select: function (e) {
+      var $this,
+          $parent,
+          $span,
+          $input;
+
+      $this = $(this);
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if ($this.is('.disabled') || $this.attr('disabled') !== undefined) {
+        return true;
+      }
+
+      $parent = getParent($this);
+
+      $parent.val($this.data('option'));
+      $parent.trigger('change.bfhselectbox');
+
+      clearMenus();
     }
-    
-    , mouseenter: function (e) {
-      var $this
 
-      $this = $(this)
-
-      if ($this.is('.disabled, :disabled')) return false
-
-      $this.focus()
-    }
-    
-    , select: function (e) {
-      var $this
-        , $parent
-        , $toggle
-        , $input
-      
-      $this = $(this)
-      
-      e.preventDefault()
-      e.stopPropagation()
-      
-      if ($this.is('.disabled, :disabled')) return false
-      
-      $parent = $this.closest('.bfh-selectbox')
-      $toggle = $parent.find('.bfh-selectbox-option')
-      $input = $parent.find('input[type="hidden"]')
-      
-      $toggle.data('option', $this.data('option'))
-      $toggle.html($this.html())
-      
-      $input.removeData()
-      $input.val($this.data('option'))
-      $.each($this.data(), function(i,e) {
-        $input.data(i,e);  
-      });
-      $input.change()
-      
-      clearMenus()
-    }
-
-  }
+  };
 
   function clearMenus() {
-    getParent($(toggle))
-      .removeClass('open')
+    var $parent;
+
+    $(toggle).each(function (e) {
+      $parent = getParent($(this));
+
+      if (!$parent.hasClass('open')) {
+        return true;
+      }
+
+      $parent.trigger(e = $.Event('hide.bfhselectbox'));
+
+      if (e.isDefaultPrevented()) {
+        return true;
+      }
+
+      $parent
+        .removeClass('open')
+        .trigger('hidden.bfhselectbox');
+    });
   }
 
   function getParent($this) {
-    var selector = $this.attr('data-target')
-      , $parent
-
-    if (!selector) {
-      selector = $this.attr('href')
-      selector = selector && /#/.test(selector) && selector.replace(/.*(?=#[^\s]*$)/, '') //strip for ie7
-    }
-
-    $parent = $(selector)
-    $parent.length || ($parent = $this.parent())
-
-    return $parent
+    return $this.closest('.bfh-selectbox');
   }
 
 
   /* SELECTBOX PLUGIN DEFINITION
    * ========================== */
 
+  var old = $.fn.bfhselectbox;
+
   $.fn.bfhselectbox = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhselectbox')
+      var $this,
+          data,
+          options;
+
+      $this = $(this);
+      data = $this.data('bfhselectbox');
+      options = typeof option === 'object' && option;
       this.type = 'bfhselectbox';
-      if (!data) $this.data('bfhselectbox', (data = new BFHSelectBox(this)))
-      if (typeof option == 'string') data[option].call($this)
-    })
-  }
 
-  $.fn.bfhselectbox.Constructor = BFHSelectBox
+      if (!data) {
+        $this.data('bfhselectbox', (data = new BFHSelectBox(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
 
-  var origHook
-  // There might already be valhooks for the "text" type
+  $.fn.bfhselectbox.Constructor = BFHSelectBox;
+
+  $.fn.bfhselectbox.defaults = {
+    icon: 'caret',
+    input: 'form-control',
+    name: '',
+    value: '',
+    filter: false
+  };
+
+
+  /* SELECTBOX NO CONFLICT
+   * ========================== */
+
+  $.fn.bfhselectbox.noConflict = function () {
+    $.fn.bfhselectbox = old;
+    return this;
+  };
+
+
+  /* SELECTBOX VALHOOKS
+   * ========================== */
+
+  var origHook;
   if ($.valHooks.div){
-    // Preserve the original valhook function
-    origHook = $.valHooks.div
+    origHook = $.valHooks.div;
   }
   $.valHooks.div = {
     get: function(el) {
-      if($(el).hasClass("bfh-selectbox")){
-        return $(el).find('input[type="hidden"]').val()
-      }else if (origHook){
-        return origHook.get(el)
+      if ($(el).hasClass('bfh-selectbox')) {
+        return $(el).find('input[type="hidden"]').val();
+      } else if (origHook) {
+        return origHook.get(el);
       }
     },
     set: function(el, val) {
-      if($(el).hasClass("bfh-selectbox")){
-        var $el = $(el)
-          , text = $el.find("li a[data-option='"+val+"']").text()
-        $el.find('input[type="hidden"]').val(val)
+      var $el,
+          html;
 
-        $el.find('.bfh-selectbox-option').text(text)
-      }else if (origHook){
-        return origHook.set(el,val)
+      if ($(el).hasClass('bfh-selectbox')) {
+
+        $el = $(el);
+        if ($el.find('li a[data-option=\'' + val + '\']').length > 0) {
+          html = $el.find('li a[data-option=\'' + val + '\']').html();
+        } else if ($el.find('li a').length > 0) {
+          html = $el.find('li a').eq(0).html();
+        } else {
+          val = '';
+          html = '';
+        }
+
+        $el.find('input[type="hidden"]').val(val);
+        $el.find('.bfh-selectbox-option').html(html);
+      } else if (origHook) {
+        return origHook.set(el,val);
       }
     }
-  }
+  };
+
+
+  /* SELECTBOX DATA-API
+   * ============== */
+
+  $(document).ready( function () {
+    $('div.bfh-selectbox').each(function () {
+      var $selectbox;
+
+      $selectbox = $(this);
+
+      $selectbox.bfhselectbox($selectbox.data());
+    });
+  });
+
 
   /* APPLY TO STANDARD SELECTBOX ELEMENTS
    * =================================== */
 
-  $(function () {
-    $('html')
-      .on('click.bfhselectbox.data-api', clearMenus)
-    $('body')
-      .on('click.bfhselectbox.data-api focus.bfhselectbox.data-api touchstart.bfhselectbox.data-api'  , toggle, BFHSelectBox.prototype.toggle)
-      .on('keydown.bfhselectbox.data-api', toggle + ', [role=option]' , BFHSelectBox.prototype.keydown)
-      .on('mouseenter.bfhselectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.mouseenter)
-      .on('click.bfhselectbox.data-api', '[role=option] > li > a', BFHSelectBox.prototype.select)  
-      .on('click.bfhselectbox.data-api', '.bfh-selectbox-filter', function (e) { return false })
-      .on('propertychange.bfhselectbox.data-api change.bfhselectbox.data-api input.bfhselectbox.data-api paste.bfhselectbox.data-api', '.bfh-selectbox-filter', BFHSelectBox.prototype.filter)
-  })
+  $(document)
+    .on('click.bfhselectbox.data-api', clearMenus);
 
 }(window.jQuery);

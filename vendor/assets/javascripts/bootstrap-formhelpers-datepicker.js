@@ -17,417 +17,568 @@
  * limitations under the License.
  * ========================================================== */
 
-var BFHMonthsList;
-var BFHDaysList;
-var BFHDayOfWeekStart;
++function ($) {
 
-!function ($) {
-
-  "use strict";
+  'use strict';
 
 
- /* BFHDATEPICKER CLASS DEFINITION
-  * ========================= */
+  /* BFHDATEPICKER CLASS DEFINITION
+   * ========================= */
 
-  var toggle = '[data-toggle=bfh-datepicker]'
-    , BFHDatePicker = function (element, options) {
-        this.options = $.extend({}, $.fn.bfhdatepicker.defaults, options)
-        this.$element = $(element)
-        this.initCalendar()
-      }
+  var toggle = '[data-toggle=bfh-datepicker]',
+      BFHDatePicker = function (element, options) {
+        this.options = $.extend({}, $.fn.bfhdatepicker.defaults, options);
+        this.$element = $(element);
+
+        this.initCalendar();
+      };
 
   BFHDatePicker.prototype = {
 
-    constructor: BFHDatePicker
+    constructor: BFHDatePicker,
 
-  , daysInMonth: function(month, year) {
-    return new Date(year, month, 0).getDate()
-  }
-  
-  , dayOfWeek: function(month, year, day) {
-    return new Date(year, month, day).getDay()
-  }
-  
-  , formatDate: function(month, year, day) {
-    var date = this.options.format
-    month += 1
-    month = String(month)
-    day = String(day)
-    
-    if (month.length == 1) {
-      month = "0" + month
-    }
-    if (day.length == 1) {
-      day = "0" + day
-    }
-    date = date.replace("m", month)
-    date = date.replace("y", year)
-    date = date.replace("d", day)
-    
-    return date
-  }
-  
-  , parse: function(element, date) {
-    var format = this.options.format
-    
-    var monthPos = format.indexOf("m")
-    var yearPos = format.indexOf("y")
-    var dayPos = format.indexOf("d")
-    
-    var indexes = [
-      {"type": "m", "pos": monthPos},
-      {"type": "y", "pos": yearPos},
-      {"type": "d", "pos": dayPos}
-    ]
-    
-    indexes.sort(function(a, b) {return a.pos - b.pos})
-    
-    var parts = date.match(/(\d+)/g)
-    
-    for (var i=0; i < indexes.length; i++) {
-      if (indexes[i].type == element) {
-        return Number(parts[i]).toString()
-      }
-    }
-  }
-  
-  , initCalendar: function() {
-    var date
-      , start
-      , end
-      , today
-      
-    date = this.options.date
-    start = this.options.start
-    end = this.options.end
-    today = new Date()
-    
-    if (date === "" || date == "today") {
-      if (date == "today") {
-        this.$element.find('input[type=text]').val(this.formatDate(today.getMonth(), today.getFullYear(), today.getDate()))
-      }
-      this.$element.data('month', today.getMonth())
-      this.$element.data('year', today.getFullYear())
-    } else {
-      this.$element.find('input[type=text]').val(date)
-      this.$element.data('month', this.parse("m", date) - 1)
-      this.$element.data('year', this.parse("y", date))
-    }
-    
-    if (start !== "") {
-      this.$element.data('lowerlimit', '1')
-      
-      if (start == "today") {
-        this.$element.data('lowerday', today.getDate())
-        this.$element.data('lowermonth', today.getMonth())
-        this.$element.data('loweryear', today.getFullYear())
+    setDate: function() {
+      var date,
+          today,
+          format;
+
+      date = this.options.date;
+      format = this.options.format;
+
+      if (date === '' || date === 'today' || date === undefined) {
+        today = new Date();
+
+        if (date === 'today') {
+          this.$element.val(formatDate(format, today.getMonth(), today.getFullYear(), today.getDate()));
+        }
+
+        this.$element.data('month', today.getMonth());
+        this.$element.data('year', today.getFullYear());
       } else {
-        this.$element.data('lowerday', this.parse("d", start))
-        this.$element.data('lowermonth', this.parse("m", start) - 1)
-        this.$element.data('loweryear', this.parse("y", start))
+        this.$element.val(date);
+        this.$element.data('month', Number(getDatePart(format, date, 'm') - 1));
+        this.$element.data('year', Number(getDatePart(format, date, 'y')));
       }
-    } else {
-      this.$element.data('lowerlimit', '0')
-    }
-    
-    if (end !== "") {
-      this.$element.data('higherlimit', '1')
-      if (end == "today") {
-        this.$element.data('higherday', today.getDate())
-        this.$element.data('highermonth', today.getMonth())
-        this.$element.data('higheryear', today.getFullYear())
+    },
+
+    setDateLimit: function(date, limitPrefix) {
+      var today,
+          format;
+
+      format = this.options.format;
+
+      if (date !== '') {
+        this.$element.data(limitPrefix + 'limit', true);
+
+        if (date === 'today') {
+          today = new Date();
+
+          this.$element.data(limitPrefix + 'day', today.getDate());
+          this.$element.data(limitPrefix + 'month', today.getMonth());
+          this.$element.data(limitPrefix + 'year', today.getFullYear());
+        } else {
+          this.$element.data(limitPrefix + 'day', Number(getDatePart(format, date, 'd')));
+          this.$element.data(limitPrefix + 'month', Number(getDatePart(format, date, 'm') - 1));
+          this.$element.data(limitPrefix + 'year', Number(getDatePart(format, date, 'y')));
+        }
       } else {
-        this.$element.data('higherday', this.parse("d", end))
-        this.$element.data('highermonth', this.parse("m", end) - 1)
-        this.$element.data('higheryear', this.parse("y", end))
+        this.$element.data(limitPrefix + 'limit', false);
       }
-    } else {
-      this.$element.data('higherlimit', '0')
-    }
-    
-    this.updateCalendar()
-  }
-  
-  , updateCalendar: function () {
-    var $calendar
-      , today
-      , month
-      , year
-      , $daysHeader
-      , $days
-      , lowerlimit
-      , lowerday
-      , lowermonth
-      , loweryear
-      , higherlimit
-      , higherday
-      , highermonth
-      , higheryear
-      , i
-      , j
-    
-    today = new Date()
-    month = this.$element.data('month')
-    year = this.$element.data('year')
-    
-    lowerlimit = this.$element.data('lowerlimit')
-    if (lowerlimit) {
-      lowerday = this.$element.data('lowerday')
-      lowermonth = this.$element.data('lowermonth')
-      loweryear = this.$element.data('loweryear')
-    }
-    
-    higherlimit = this.$element.data('higherlimit')
-    if (higherlimit) {
-      higherday = this.$element.data('higherday')
-      highermonth = this.$element.data('highermonth')
-      higheryear = this.$element.data('higheryear')
-    }
-    
-    $calendar = this.$element.find('.bfh-datepicker-calendar')
-    
-    $calendar.find('table > thead > tr > th.month > span').text(BFHMonthsList[month])
-    $calendar.find('table > thead > tr > th.year > span').text(year)
-    $daysHeader = $calendar.find('table > thead > tr.days-header')
-    $daysHeader.html('')
-    for (i=BFHDayOfWeekStart; i < BFHDaysList.length; i++) {
-      $daysHeader.append('<th>' + BFHDaysList[i] + '</th>')
-    }
-    for (i=0; i < BFHDayOfWeekStart; i++) {
-      $daysHeader.append('<th>' + BFHDaysList[i] + '</th>')
-    }
-    $days = $calendar.find('table > tbody')
-    $days.html('')
-    var numDaysPrevious = this.daysInMonth(month, year)
-    var numDays = this.daysInMonth(month + 1, year)
-    var firstDay = this.dayOfWeek(month, year, 1)
-    var lastDay = this.dayOfWeek(month, year, numDays)
-    var row = ''
-    for (i=0; i < (firstDay - BFHDayOfWeekStart + 7) % 7; i++) {
-      if (i === 0) {
-        row += '<tr>'
+    },
+
+    initCalendar: function() {
+      var iconLeft,
+          iconRight,
+          iconAddon;
+
+      iconLeft = '';
+      iconRight = '';
+      iconAddon = '';
+      if (this.options.icon !== '') {
+        if (this.options.align === 'right') {
+          iconRight = '<span class="input-group-addon"><i class="' + this.options.icon + '"></i></span>';
+        } else {
+          iconLeft = '<span class="input-group-addon"><i class="' + this.options.icon + '"></i></span>';
+        }
+        iconAddon = 'input-group';
       }
-      var previousDay = numDaysPrevious - (firstDay - BFHDayOfWeekStart + 7) % 7 + i + 1
-      row += '<td class="off">' + previousDay + '</td>'
-    }
-    for (i=1; i <= numDays; i++) {
-      var day = this.dayOfWeek(month, year, i)
-      if (day == BFHDayOfWeekStart) {
-        row += '<tr>'
+
+      this.$element.html(
+        '<div class="' + iconAddon + ' bfh-datepicker-toggle" data-toggle="bfh-datepicker">' +
+        iconLeft +
+        '<input type="text" name="' + this.options.name + '" class="' + this.options.input + '" placeholder="' + this.options.placeholder + '" readonly>' +
+        iconRight +
+        '</div>' +
+        '<div class="bfh-datepicker-calendar">' +
+        '<table class="calendar table table-bordered">' +
+        '<thead>' +
+        '<tr class="months-header">' +
+        '<th class="month" colspan="4">' +
+        '<a class="previous" href="#"><i class="glyphicon glyphicon-chevron-left"></i></a>' +
+        '<span></span>' +
+        '<a class="next" href="#"><i class="glyphicon glyphicon-chevron-right"></i></a>' +
+        '</th>' +
+        '<th class="year" colspan="3">' +
+        '<a class="previous" href="#"><i class="glyphicon glyphicon-chevron-left"></i></a>' +
+        '<span></span>' +
+        '<a class="next" href="#"><i class="glyphicon glyphicon-chevron-right"></i></a>' +
+        '</th>' +
+        '</tr>' +
+        '<tr class="days-header">' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+        '</tbody>' +
+        '</table>' +
+        '</div>'
+      );
+
+      this.$element
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', toggle, BFHDatePicker.prototype.toggle)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .month > .previous', BFHDatePicker.prototype.previousMonth)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .month > .next', BFHDatePicker.prototype.nextMonth)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .year > .previous', BFHDatePicker.prototype.previousYear)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .year > .next', BFHDatePicker.prototype.nextYear)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar td:not(.off)', BFHDatePicker.prototype.select)
+        .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar', function() { return false; });
+
+      this.setDate();
+      this.setDateLimit(this.options.min, 'lower');
+      this.setDateLimit(this.options.max, 'higher');
+
+      this.updateCalendar();
+    },
+
+    updateCalendarHeader: function($calendar, month, year) {
+      var $daysHeader,
+          day;
+
+      $calendar.find('table > thead > tr > th.month > span').text(BFHMonthsList[month]);
+      $calendar.find('table > thead > tr > th.year > span').text(year);
+
+      $daysHeader = $calendar.find('table > thead > tr.days-header');
+      $daysHeader.html('');
+      for (day=BFHDayOfWeekStart; day < BFHDaysList.length; day=day+1) {
+        $daysHeader.append('<th>' + BFHDaysList[day] + '</th>');
       }
-      if (lowerlimit && (i < lowerday && month == lowermonth && year == loweryear || month < lowermonth || year < loweryear)) {
-        row += '<td data-day="' + i + '" class="off">' + i + '</td>'
-      } else if (higherlimit && (i > higherday && month == highermonth && year == higheryear || month > highermonth || year > higheryear)) {
-        row += '<td data-day="' + i + '" class="off">' + i + '</td>'
-      } else if (i == today.getDate() && month == today.getMonth() && year == today.getFullYear()) {
-        row += '<td data-day="' + i + '" class="today">' + i + '</td>'
+      for (day=0; day < BFHDayOfWeekStart; day=day+1) {
+        $daysHeader.append('<th>' + BFHDaysList[day] + '</th>');
+      }
+    },
+
+    checkMinDate: function(day, month, year) {
+      var lowerlimit,
+          lowerday,
+          lowermonth,
+          loweryear;
+
+      lowerlimit = this.$element.data('lowerlimit');
+
+      if (lowerlimit === true) {
+        lowerday = this.$element.data('lowerday');
+        lowermonth = this.$element.data('lowermonth');
+        loweryear = this.$element.data('loweryear');
+
+        if ((day < lowerday && month === lowermonth && year === loweryear) || (month < lowermonth && year === loweryear) || (year < loweryear)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    checkMaxDate: function(day, month, year) {
+      var higherlimit,
+          higherday,
+          highermonth,
+          higheryear;
+
+      higherlimit = this.$element.data('higherlimit');
+
+      if (higherlimit === true) {
+        higherday = this.$element.data('higherday');
+        highermonth = this.$element.data('highermonth');
+        higheryear = this.$element.data('higheryear');
+
+        if ((day > higherday && month === highermonth && year === higheryear) || (month > highermonth && year === higheryear) || (year > higheryear)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    checkToday: function(day, month, year) {
+      var today;
+
+      today = new Date();
+
+      if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+        return true;
+      }
+
+      return false;
+    },
+
+    updateCalendarDays: function($calendar, month, year) {
+      var $days,
+          numDaysPreviousMonth,
+          numDaysCurrentMonth,
+          firstDay,
+          lastDay,
+          row,
+          day;
+
+      $days = $calendar.find('table > tbody').html('');
+      numDaysPreviousMonth = getNumDaysInMonth(month, year);
+      numDaysCurrentMonth = getNumDaysInMonth(month + 1, year);
+      firstDay = getDayOfWeek(month, year, 1);
+      lastDay = getDayOfWeek(month, year, numDaysCurrentMonth);
+
+      row = '';
+      for (day=0; day < (firstDay - BFHDayOfWeekStart + 7) % 7; day=day+1) {
+        row += '<td class="off">' + (numDaysPreviousMonth - (firstDay - BFHDayOfWeekStart + 7) % 7 + day + 1) + '</td>';
+      }
+
+      for (day=1; day <= numDaysCurrentMonth; day=day+1) {
+        if (this.checkMinDate(day, month, year)) {
+          row += '<td data-day="' + day + '" class="off">' + day + '</td>';
+        } else if (this.checkMaxDate(day, month, year)) {
+          row += '<td data-day="' + day + '" class="off">' + day + '</td>';
+        } else if (this.checkToday(day, month, year)) {
+          row += '<td data-day="' + day + '" class="today">' + day + '</td>';
+        } else {
+          row += '<td data-day="' + day + '">' + day + '</td>';
+        }
+        if (getDayOfWeek(month, year, day) === (6 + BFHDayOfWeekStart) % 7) {
+          $days.append('<tr>' + row + '</tr>');
+          row = '';
+        }
+      }
+
+      for (day=1; day <= (7 - ((lastDay + 1 - BFHDayOfWeekStart + 7) % 7)) % 7 + 1; day=day+1) {
+        row += '<td class="off">' + day + '</td>';
+        if (day === (7 - ((lastDay + 1 - BFHDayOfWeekStart + 7) % 7)) % 7) {
+          $days.append('<tr>' + row + '</tr>');
+        }
+      }
+    },
+
+    updateCalendar: function () {
+      var $calendar,
+          month,
+          year;
+
+      $calendar = this.$element.find('.bfh-datepicker-calendar');
+      month = this.$element.data('month');
+      year = this.$element.data('year');
+
+      this.updateCalendarHeader($calendar, month, year);
+      this.updateCalendarDays($calendar, month, year);
+    },
+
+    previousMonth: function () {
+      var $this,
+          $parent,
+          $datePicker;
+
+      $this = $(this);
+      $parent = getParent($this);
+
+      if (Number($parent.data('month')) === 0) {
+        $parent.data('month', 11);
+        $parent.data('year', Number($parent.data('year')) - 1);
       } else {
-        row += '<td data-day="' + i + '">' + i + '</td>'
+        $parent.data('month', Number($parent.data('month')) - 1);
       }
-      if (day == (6 + BFHDayOfWeekStart) % 7) {
-        row += '</tr>'
-        $days.append(row)
-        row = ''
+
+      $datePicker = $parent.data('bfhdatepicker');
+      $datePicker.updateCalendar();
+
+      return false;
+    },
+
+    nextMonth: function () {
+      var $this,
+          $parent,
+          $datePicker;
+
+      $this = $(this);
+      $parent = getParent($this);
+
+      if (Number($parent.data('month')) === 11) {
+        $parent.data('month', 0);
+        $parent.data('year', Number($parent.data('year')) + 1);
+      } else {
+        $parent.data('month', Number($parent.data('month')) + 1);
       }
-    }
-    for (i=0, j=1; i < (7 - ((lastDay + 1 - BFHDayOfWeekStart + 7) % 7)) % 7; i++, j++) {
-      row += '<td class="off">' + j + '</td>'
-      if (i == (7 - ((lastDay + 1 - BFHDayOfWeekStart + 7) % 7)) % 7 - 1) {
-        row += '</tr>'
-        $days.append(row)
+
+      $datePicker = $parent.data('bfhdatepicker');
+      $datePicker.updateCalendar();
+
+      return false;
+    },
+
+    previousYear: function () {
+      var $this,
+          $parent,
+          $datePicker;
+
+      $this = $(this);
+      $parent = getParent($this);
+
+      $parent.data('year', Number($parent.data('year')) - 1);
+
+      $datePicker = $parent.data('bfhdatepicker');
+      $datePicker.updateCalendar();
+
+      return false;
+    },
+
+    nextYear: function () {
+      var $this,
+          $parent,
+          $datePicker;
+
+      $this = $(this);
+      $parent = getParent($this);
+
+      $parent.data('year', Number($parent.data('year')) + 1);
+
+      $datePicker = $parent.data('bfhdatepicker');
+      $datePicker.updateCalendar();
+
+      return false;
+    },
+
+    select: function (e) {
+      var $this,
+          $parent,
+          $datePicker,
+          month,
+          year,
+          day;
+
+      $this = $(this);
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      $parent = getParent($this);
+      $datePicker = $parent.data('bfhdatepicker');
+      month = $parent.data('month');
+      year = $parent.data('year');
+      day = $this.data('day');
+
+      $parent.val(formatDate($datePicker.options.format, month, year, day));
+      $parent.trigger('change.bfhdatepicker');
+
+      if ($datePicker.options.close === true) {
+        clearMenus();
       }
-    }
+    },
 
-  }
-  
-  , previousMonth: function (e) {
-    var $this = $(this)
-      , $parent
-      , $datePicker
-      
-    $parent = $this.closest('.bfh-datepicker')
-    
-    if ($parent.data('month') === 0) {
-      $parent.data('month', 11)
-      $parent.data('year', Number($parent.data('year')) - 1)
-    } else {
-      $parent.data('month', Number($parent.data('month')) - 1)
-    }
-    
-    $datePicker = $parent.data('bfhdatepicker')
-    $datePicker.updateCalendar()
-    
-    return false
-  }
-  
-  , nextMonth: function (e) {
-    var $this = $(this)
-      , $parent
-      , $datePicker
-      
-    $parent = $this.closest('.bfh-datepicker')
-    
-    if ($parent.data('month') == 11) {
-      $parent.data('month', 0)
-      $parent.data('year', Number($parent.data('year')) + 1)
-    } else {
-      $parent.data('month', Number($parent.data('month')) + 1)
-    }
-    
-    $datePicker = $parent.data('bfhdatepicker')
-    $datePicker.updateCalendar()
-    
-    return false
-  }
-  
-  , previousYear: function (e) {
-    var $this = $(this)
-      , $parent
-      , $datePicker
-      
-    $parent = $this.closest('.bfh-datepicker')
-    
-    $parent.data('year', Number($parent.data('year')) - 1)
-    
-    $datePicker = $parent.data('bfhdatepicker')
-    $datePicker.updateCalendar()
-    
-    return false
-  }
-  
-  , nextYear: function (e) {
-    var $this = $(this)
-      , $parent
-      , $datePicker
-      
-    $parent = $this.closest('.bfh-datepicker')
-    
-    $parent.data('year', Number($parent.data('year')) + 1)
-    
-    $datePicker = $parent.data('bfhdatepicker')
-    $datePicker.updateCalendar()
-    
-    return false
-  }
-  
-  , select: function (e) {
-    var $this = $(this)
-    , $parent
-    , $datePicker
-    
-    $parent = $this.closest('.bfh-datepicker')
-    
-    var month = $parent.data('month')
-    var year = $parent.data('year')
-    var day = $this.data('day')
-    
-    $datePicker = $parent.data('bfhdatepicker')
-    
-    $parent.find('input[type=text]').val($datePicker.formatDate(month, year, day)).trigger('change')
-    
-    if ($datePicker.options.close) {
-      $datePicker.toggle()
-    }
-    
-    return false
-  }
-  
-  , toggle: function (e) {
-      var $this = $(this)
-        , $parent
-        , isActive
+    toggle: function (e) {
+      var $this,
+          $parent,
+          isActive;
 
-      if ($this.is('.disabled, :disabled')) return
+      $this = $(this);
+      $parent = getParent($this);
 
-      $parent = getParent($this)
-
-      if (e && e.type != 'click') {
-        window.setTimeout(function() {
-          $parent.addClass('open')
-        }, 200)
-        
-        return false
+      if ($parent.is('.disabled') || $parent.attr('disabled') !== undefined) {
+        return true;
       }
-      
-      isActive = $parent.hasClass('open')
 
-      clearMenus()
+      isActive = $parent.hasClass('open');
+
+      clearMenus();
 
       if (!isActive) {
-        $parent.toggleClass('open')
+        $parent.trigger(e = $.Event('show.bfhdatepicker'));
+
+        if (e.isDefaultPrevented()) {
+          return true;
+        }
+
+        $parent
+          .toggleClass('open')
+          .trigger('shown.bfhdatepicker');
+
+        $this.focus();
       }
 
-      return false
+      return false;
+    }
+  };
+
+  function getNumDaysInMonth(month, year) {
+    return new Date(year, month, 0).getDate();
+  }
+
+  function getDayOfWeek(month, year, day) {
+    return new Date(year, month, day).getDay();
+  }
+
+  function formatDate(format, month, year, day) {
+    month += 1;
+    month = String(month);
+    day = String(day);
+
+    if (month.length === 1) {
+      month = '0' + month;
+    }
+    if (day.length === 1) {
+      day = '0' + day;
+    }
+
+    return format.replace('m', month).replace('y', year).replace('d', day);
+  }
+
+  function getDatePart(format, date, part) {
+    var partPositions,
+        partPosition,
+        parts;
+
+    partPositions = [
+      {'part': 'm', 'position': format.indexOf('m')},
+      {'part': 'y', 'position': format.indexOf('y')},
+      {'part': 'd', 'position': format.indexOf('d')}
+    ];
+
+    partPositions.sort(function(a, b) {return a.position - b.position;});
+
+    parts = date.match(/(\d+)/g);
+
+    for (partPosition in partPositions) {
+      if (partPositions.hasOwnProperty(partPosition)) {
+        if (partPositions[partPosition].part === part) {
+          return Number(parts[partPosition]).toString();
+        }
+      }
     }
   }
 
   function clearMenus() {
-    getParent($(toggle))
-      .removeClass('open')
+    var $parent;
+
+    $(toggle).each(function (e) {
+      $parent = getParent($(this));
+
+      if (!$parent.hasClass('open')) {
+        return true;
+      }
+
+      $parent.trigger(e = $.Event('hide.bfhdatepicker'));
+
+      if (e.isDefaultPrevented()) {
+        return true;
+      }
+
+      $parent
+        .removeClass('open')
+        .trigger('hidden.bfhdatepicker');
+    });
   }
 
   function getParent($this) {
-    var selector = $this.attr('data-target')
-      , $parent
-
-    if (!selector) {
-      selector = $this.attr('href')
-      selector = selector && /#/.test(selector) && selector.replace(/.*(?=#[^\s]*$)/, '') //strip for ie7
-    }
-
-    $parent = $(selector)
-    $parent.length || ($parent = $this.parent())
-
-    return $parent
+    return $this.closest('.bfh-datepicker');
   }
 
 
   /* DATEPICKER PLUGIN DEFINITION
    * ========================== */
 
+  var old = $.fn.bfhdatepicker;
+
   $.fn.bfhdatepicker = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhdatepicker')
-        , options = typeof option == 'object' && option
-        
-      if (!data) $this.data('bfhdatepicker', (data = new BFHDatePicker(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+      var $this,
+          data,
+          options;
 
-  $.fn.bfhdatepicker.Constructor = BFHDatePicker
+      $this = $(this);
+      data = $this.data('bfhdatepicker');
+      options = typeof option === 'object' && option;
+      this.type = 'bfhdatepicker';
+
+      if (!data) {
+        $this.data('bfhdatepicker', (data = new BFHDatePicker(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
+
+  $.fn.bfhdatepicker.Constructor = BFHDatePicker;
 
   $.fn.bfhdatepicker.defaults = {
-    format: "m/d/y",
-    date: "",
-    start: "",
-    end: "",
-    close: 1
+    icon: 'glyphicon glyphicon-calendar',
+    align: 'left',
+    input: 'form-control',
+    placeholder: '',
+    name: '',
+    date: 'today',
+    format: 'm/d/y',
+    min: '',
+    max: '',
+    close: true
+  };
+
+
+  /* DATEPICKER NO CONFLICT
+   * ========================== */
+
+  $.fn.bfhdatepicker.noConflict = function () {
+    $.fn.bfhdatepicker = old;
+    return this;
+  };
+
+
+  /* DATEPICKER VALHOOKS
+   * ========================== */
+
+  var origHook;
+  if ($.valHooks.div){
+    origHook = $.valHooks.div;
   }
-  
+  $.valHooks.div = {
+    get: function(el) {
+      if ($(el).hasClass('bfh-datepicker')) {
+        return $(el).find('input[type="text"]').val();
+      } else if (origHook) {
+        return origHook.get(el);
+      }
+    },
+    set: function(el, val) {
+      if ($(el).hasClass('bfh-datepicker')) {
+        $(el).find('input[type="text"]').val(val);
+      } else if (origHook) {
+        return origHook.set(el,val);
+      }
+    }
+  };
+
+
+  /* DATEPICKER DATA-API
+   * ============== */
+
+  $(document).ready( function () {
+    $('div.bfh-datepicker').each(function () {
+      var $datepicker;
+
+      $datepicker = $(this);
+
+      $datepicker.bfhdatepicker($datepicker.data());
+    });
+  });
+
+
   /* APPLY TO STANDARD DATEPICKER ELEMENTS
    * =================================== */
 
-  $(window).on('load', function () {
-    $('div.bfh-datepicker').each(function () {
-      var $datepicker = $(this)
-
-      $datepicker.bfhdatepicker($datepicker.data())
-    })
-  })
-  
-  $(function () {
-    $('html')
-      .on('click.bfhdatepicker.data-api', clearMenus)
-    $('body')
-      .on('click.bfhdatepicker.data-api focus.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', toggle, BFHDatePicker.prototype.toggle)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .month > .previous', BFHDatePicker.prototype.previousMonth)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .month > .next', BFHDatePicker.prototype.nextMonth)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .year > .previous', BFHDatePicker.prototype.previousYear)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar .year > .next', BFHDatePicker.prototype.nextYear)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar td:not(.off)', BFHDatePicker.prototype.select)
-      .on('click.bfhdatepicker.data-api touchstart.bfhdatepicker.data-api', '.bfh-datepicker-calendar > table.calendar', function() { return false })
-  })
+  $(document)
+    .on('click.bfhdatepicker.data-api', clearMenus);
 
 }(window.jQuery);
