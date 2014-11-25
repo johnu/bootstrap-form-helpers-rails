@@ -1,10 +1,10 @@
 /* ==========================================================
- * bootstrap-formhelpers-fontsizes.en_US.js
+ * bootstrap-formhelpers-datepicker.ru_RU.js
  * https://github.com/vlamanna/BootstrapFormHelpers
  * ==========================================================
- * Copyright 2012 Vincent Lamanna
+ * Copyright 2013 Yuri Mihaqlov
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -17,18 +17,29 @@
  * limitations under the License.
  * ========================================================== */
  
-var BFHFontSizesList = {
-  '8': '8px',
-  '9': '9px',
-  '10': '10px',
-  '11': '11px',
-  '12': '12px',
-  '14': '14px',
-  '16': '16px',
-  '18': '18px',
-  '20': '20px',
-  '24': '24px',
-  '28': '28px',
-  '36': '36px',
-  '48': '48px'
-};
+var BFHMonthsList = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь'
+];
+ 
+var BFHDaysList = [
+  'ВС',
+  'ПН',
+  'ВТ',
+  'СР',
+  'ЧТ',
+  'ПТ',
+  'СБ'
+];
+ 
+var BFHDayOfWeekStart = 1;

@@ -3,11 +3,14 @@
     "title": "Bootstrap Form Helpers Font Picker",
     "description": "Font Picker jQuery plugin for Bootstrap.",
     "keywords": [
+        "ui",
+        "jquery",
         "form",
         "input",
-        "font"
+        "font",
+        "bootstrap"
     ],
-    "version": "1.9.1",
+    "version": "2.3.0",
     "author": {
         "name": "Vincent Lamanna",
         "url": "http://vincentlamanna.com"
@@ -20,7 +23,7 @@
     ],
     "bugs": "https://github.com/vlamanna/BootstrapFormHelpers/issues",
     "homepage": "http://bootstrapformhelpers.com",
-    "docs": "http://bootstrapformhelpers.com/font",
+    "docs": "http://bootstrapformhelpers.com/font/",
     "download": "https://github.com/vlamanna/BootstrapFormHelpers/archive/master.zip",
     "dependencies": {
         "jquery": ">=1.7"

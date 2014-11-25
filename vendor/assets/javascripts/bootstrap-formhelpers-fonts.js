@@ -17,116 +17,166 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * ========================================================== */
- 
- var BFHFontsList;
-  
- !function ($) {
 
-  "use strict";
++function ($) {
+
+  'use strict';
 
 
- /* FONTS CLASS DEFINITION
-  * ====================== */
+  /* FONTS CLASS DEFINITION
+   * ====================== */
 
   var BFHFonts = function (element, options) {
-    this.options = $.extend({}, $.fn.bfhfonts.defaults, options)
-    this.$element = $(element)
+    this.options = $.extend({}, $.fn.bfhfonts.defaults, options);
+    this.$element = $(element);
 
-    this.familyList = BFHFontsList
-    
-    if (this.$element.is("select")) {
-      this.addFonts()
+    if (this.$element.is('select')) {
+      this.addFonts();
     }
-    
-    if (this.$element.is("span")) {
-      this.displayFont()
+
+    if (this.$element.hasClass('bfh-selectbox')) {
+      this.addBootstrapFonts();
     }
-    
-    if (this.$element.hasClass("bfh-selectbox")) {
-      this.addBootstrapFonts()
-    }
-  }
+  };
 
   BFHFonts.prototype = {
 
-    constructor: BFHFonts
+    constructor: BFHFonts,
 
-    , addFonts: function () {
-      var value = this.options.family
-      
-      this.$element.html('')
-      for (var f in this.familyList) {
-        this.$element.append('<option value="' + f + '">' + f + '</option>')
+    getFonts: function() {
+      var font,
+          fonts;
+
+      if (this.options.available) {
+        fonts = [];
+
+        this.options.available = this.options.available.split(',');
+
+        for (font in BFHFontsList) {
+          if (BFHFontsList.hasOwnProperty(font)) {
+            if ($.inArray(font, this.options.available) >= 0) {
+              fonts[font] = BFHFontsList[font];
+            }
+          }
+        }
+
+        return fonts;
+      } else {
+        return BFHFontsList;
       }
-      
-      this.$element.val(value)
-    }
-    
-    , addBootstrapFonts: function() {
-      var $input
-      , $toggle
-      , $options
-      
-      var value = this.options.family
-      
-      $input = this.$element.find('input[type="hidden"]')
-      $toggle = this.$element.find('.bfh-selectbox-option')
-      $options = this.$element.find('[role=option]')
-      
-      $options.html('')
-      for (var f in this.familyList) {
-        $options.append('<li><a tabindex="-1" href="#" style=\'font-family: ' + this.familyList[f] + '\' data-option="' + f + '">' + f + '</a></li>')
+    },
+
+    addFonts: function () {
+      var value,
+          font,
+          fonts;
+
+      value = this.options.font;
+      fonts = this.getFonts();
+
+      this.$element.html('');
+
+      if (this.options.blank === true) {
+        this.$element.append('<option value=""></option>');
       }
-      
-      $toggle.data('option', value)
-      
-      if (value) {
-        $toggle.html(value)
+
+      for (font in fonts) {
+        if (fonts.hasOwnProperty(font)) {
+          this.$element.append('<option value="' + font + '">' + font + '</option>');
+        }
       }
-      
-      $input.val(value)
+
+      this.$element.val(value);
+    },
+
+    addBootstrapFonts: function() {
+      var $input,
+          $toggle,
+          $options,
+          value,
+          font,
+          fonts;
+
+      value = this.options.font;
+      $input = this.$element.find('input[type="hidden"]');
+      $toggle = this.$element.find('.bfh-selectbox-option');
+      $options = this.$element.find('[role=option]');
+      fonts = this.getFonts();
+
+      $options.html('');
+
+      if (this.options.blank === true) {
+        $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>');
+      }
+
+      for (font in fonts) {
+        if (fonts.hasOwnProperty(font)) {
+          $options.append('<li><a tabindex="-1" href="#" style=\'font-family: ' + fonts[font] + '\' data-option="' + font + '">' + font + '</a></li>');
+        }
+      }
+
+      this.$element.val(value);
     }
-    
-    , displayFont: function () {
-      var value = this.options.family
-      
-      this.$element.html(value)
-    }
 
-  }
+  };
 
 
- /* FONTS PLUGIN DEFINITION
-  * ======================= */
+  /* FONTS PLUGIN DEFINITION
+   * ======================= */
+
+  var old = $.fn.bfhfonts;
 
   $.fn.bfhfonts = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhfonts')
-        , options = typeof option == 'object' && option
-      this.type = 'bfhfonts'
-      if (!data) $this.data('bfhfonts', (data = new BFHFonts(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+      var $this,
+          data,
+          options;
 
-  $.fn.bfhfonts.Constructor = BFHFonts
+      $this = $(this);
+      data = $this.data('bfhfonts');
+      options = typeof option === 'object' && option;
+
+      if (!data) {
+        $this.data('bfhfonts', (data = new BFHFonts(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
+
+  $.fn.bfhfonts.Constructor = BFHFonts;
 
   $.fn.bfhfonts.defaults = {
-    family: "Arial"
-  }
-  
+    font: '',
+    available: '',
+    blank: true
+  };
 
- /* FONTS DATA-API
-  * ============== */
 
-  $(window).on('load', function () {
+  /* FONTS NO CONFLICT
+   * ========================== */
+
+  $.fn.bfhfonts.noConflict = function () {
+    $.fn.bfhfonts = old;
+    return this;
+  };
+
+
+  /* FONTS DATA-API
+   * ============== */
+
+  $(document).ready( function () {
     $('form select.bfh-fonts, span.bfh-fonts, div.bfh-fonts').each(function () {
-      var $fonts = $(this)
+      var $fonts;
 
-      $fonts.bfhfonts($fonts.data())
-    })
-  })
+      $fonts = $(this);
 
+      if ($fonts.hasClass('bfh-selectbox')) {
+        $fonts.bfhselectbox($fonts.data());
+      }
+      $fonts.bfhfonts($fonts.data());
+    });
+  });
 
 }(window.jQuery);

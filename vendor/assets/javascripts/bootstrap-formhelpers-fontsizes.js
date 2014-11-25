@@ -17,116 +17,166 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * ========================================================== */
- 
- var BFHFontSizesList;
- 
- !function ($) {
 
-  "use strict";
++function ($) {
+
+  'use strict';
 
 
- /* FONTSIZES CLASS DEFINITION
-  * ====================== */
+  /* FONTSIZES CLASS DEFINITION
+   * ====================== */
 
   var BFHFontSizes = function (element, options) {
-    this.options = $.extend({}, $.fn.bfhfontsizes.defaults, options)
-    this.$element = $(element)
+    this.options = $.extend({}, $.fn.bfhfontsizes.defaults, options);
+    this.$element = $(element);
 
-    this.fontSizesList = BFHFontSizesList
-    
-    if (this.$element.is("select")) {
-      this.addFontSizes()
+    if (this.$element.is('select')) {
+      this.addFontSizes();
     }
-    
-    if (this.$element.is("span")) {
-      this.displayFont()
+
+    if (this.$element.hasClass('bfh-selectbox')) {
+      this.addBootstrapFontSizes();
     }
-    
-    if (this.$element.hasClass("bfh-selectbox")) {
-      this.addBootstrapFontSizes()
-    }
-  }
+  };
 
   BFHFontSizes.prototype = {
 
-    constructor: BFHFontSizes
+    constructor: BFHFontSizes,
 
-    , addFontSizes: function () {
-      var value = this.options.size
-      
-      this.$element.html('')
-      for (var s in this.fontSizesList) {
-        this.$element.append('<option value="' + s + '">' + this.fontSizesList[s] + '</option>')
+    getFontsizes: function() {
+      var fontsize,
+          fontsizes;
+
+      if (this.options.available) {
+        fontsizes = [];
+
+        this.options.available = this.options.available.split(',');
+
+        for (fontsize in BFHFontSizesList) {
+          if (BFHFontSizesList.hasOwnProperty(fontsize)) {
+            if ($.inArray(fontsize, this.options.available) >= 0) {
+              fontsizes[fontsize] = BFHFontSizesList[fontsize];
+            }
+          }
+        }
+
+        return fontsizes;
+      } else {
+        return BFHFontSizesList;
       }
-      
-      this.$element.val(value)
-    }
-    
-    , addBootstrapFontSizes: function() {
-      var $input
-      , $toggle
-      , $options
-      
-      var value = this.options.size
-      
-      $input = this.$element.find('input[type="hidden"]')
-      $toggle = this.$element.find('.bfh-selectbox-option')
-      $options = this.$element.find('[role=option]')
-      
-      $options.html('')
-      for (var s in this.fontSizesList) {
-        $options.append('<li><a tabindex="-1" href="#" data-option="' + s + '">' + this.fontSizesList[s] + '</a></li>')
+    },
+
+    addFontSizes: function () {
+      var value,
+          fontsize,
+          fontsizes;
+
+      value = this.options.fontsize;
+      fontsizes = this.getFontsizes();
+
+      this.$element.html('');
+
+      if (this.options.blank === true) {
+        this.$element.append('<option value=""></option>');
       }
-      
-      $toggle.data('option', value)
-      
-      if (value) {
-        $toggle.html(this.fontSizesList[value])
+
+      for (fontsize in fontsizes) {
+        if (fontsizes.hasOwnProperty(fontsize)) {
+          this.$element.append('<option value="' + fontsize + '">' + fontsizes[fontsize] + '</option>');
+        }
       }
-      
-      $input.val(value)
+
+      this.$element.val(value);
+    },
+
+    addBootstrapFontSizes: function() {
+      var $input,
+          $toggle,
+          $options,
+          value,
+          fontsize,
+          fontsizes;
+
+      value = this.options.fontsize;
+      $input = this.$element.find('input[type="hidden"]');
+      $toggle = this.$element.find('.bfh-selectbox-option');
+      $options = this.$element.find('[role=option]');
+      fontsizes = this.getFontsizes();
+
+      $options.html('');
+
+      if (this.options.blank === true) {
+        $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>');
+      }
+
+      for (fontsize in fontsizes) {
+        if (fontsizes.hasOwnProperty(fontsize)) {
+          $options.append('<li><a tabindex="-1" href="#" data-option="' + fontsize + '">' + fontsizes[fontsize] + '</a></li>');
+        }
+      }
+
+      this.$element.val(value);
     }
-    
-    , displayFont: function () {
-      var value = this.options.family
-      
-      this.$element.html(value)
-    }
 
-  }
+  };
 
 
- /* FONTSIZES PLUGIN DEFINITION
-  * ======================= */
+  /* FONTSIZES PLUGIN DEFINITION
+   * ======================= */
+
+  var old = $.fn.bfhfontsizes;
 
   $.fn.bfhfontsizes = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhfontsizes')
-        , options = typeof option == 'object' && option
-      this.type = 'bfhfontsizes';
-      if (!data) $this.data('bfhfontsizes', (data = new BFHFontSizes(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+      var $this,
+          data,
+          options;
 
-  $.fn.bfhfontsizes.Constructor = BFHFontSizes
+      $this = $(this);
+      data = $this.data('bfhfontsizes');
+      options = typeof option === 'object' && option;
+
+      if (!data) {
+        $this.data('bfhfontsizes', (data = new BFHFontSizes(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
+
+  $.fn.bfhfontsizes.Constructor = BFHFontSizes;
 
   $.fn.bfhfontsizes.defaults = {
-    size: '12'
-  }
-  
+    fontsize: '',
+    available: '',
+    blank: true
+  };
 
- /* FONTSIZES DATA-API
-  * ============== */
 
-  $(window).on('load', function () {
+  /* FONTSIZES NO CONFLICT
+   * ========================== */
+
+  $.fn.bfhfontsizes.noConflict = function () {
+    $.fn.bfhfontsizes = old;
+    return this;
+  };
+
+
+  /* FONTSIZES DATA-API
+   * ============== */
+
+  $(document).ready( function () {
     $('form select.bfh-fontsizes, span.bfh-fontsizes, div.bfh-fontsizes').each(function () {
-      var $fontsizes = $(this)
+      var $fontSizes;
 
-      $fontsizes.bfhfontsizes($fontsizes.data())
-    })
-  })
+      $fontSizes = $(this);
 
+      if ($fontSizes.hasClass('bfh-selectbox')) {
+        $fontSizes.bfhselectbox($fontSizes.data());
+      }
+      $fontSizes.bfhfontsizes($fontSizes.data());
+    });
+  });
 
 }(window.jQuery);

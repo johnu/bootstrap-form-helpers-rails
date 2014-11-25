@@ -17,159 +17,200 @@
  * limitations under the License.
  * ========================================================== */
 
- var BFHCurrenciesList;
- 
- !function ($) {
++function ($) {
 
-  "use strict";
+  'use strict';
 
 
- /* COUNTRIES CLASS DEFINITION
-  * ====================== */
+  /* COUNTRIES CLASS DEFINITION
+   * ====================== */
 
   var BFHCurrencies = function (element, options) {
-    this.options = $.extend({}, $.fn.bfhcurrencies.defaults, options)
-    this.$element = $(element)
+    this.options = $.extend({}, $.fn.bfhcurrencies.defaults, options);
+    this.$element = $(element);
 
-	if (this.options.currencylist) {
-		this.currencyList = []
-		this.options.currencylist = this.options.currencylist.split(',')
-        for (var currency in BFHCurrenciesList) {
-			if ($.inArray(currency, this.options.currencylist) >= 0) {
-				this.currencyList[currency] = BFHCurrenciesList[currency]
-			}
-		}
-	} else {
-		this.currencyList = BFHCurrenciesList
-	}
-
-    if (this.$element.is("select")) {
-      this.addCurrencies()
+    if (this.$element.is('select')) {
+      this.addCurrencies();
     }
 
-    if (this.$element.is("span")) {
-      this.displayCurrency()
+    if (this.$element.hasClass('bfh-selectbox')) {
+      this.addBootstrapCurrencies();
     }
 
-    if (this.$element.hasClass("bfh-selectbox")) {
-      this.addBootstrapCurrencies()
+    if (this.$element.is('span')) {
+      this.displayCurrency();
     }
-  }
+  };
 
   BFHCurrencies.prototype = {
 
-    constructor: BFHCurrencies
+    constructor: BFHCurrencies,
 
-    , addCurrencies: function () {
-      var value = this.options.currency
+    getCurrencies: function () {
+      var currency,
+          currencies;
 
-      this.$element.html('')
-      this.$element.append('<option value=""></option>')
-      for (var currency in this.currencyList) {
-        this.$element.append('<option value="' + currency + '">' + this.currencyList[currency].label + '</option>')
-      }
+      if (this.options.available) {
+        currencies = [];
 
-      this.$element.val(value)
-    }
+        this.options.available = this.options.available.split(',');
 
-
-    , addBootstrapCurrencies: function() {
-      var $input
-      , $toggle
-      , $options
-
-
-      var value = this.options.currency
-
-      $input = this.$element.find('input[type="hidden"]')
-      $toggle = this.$element.find('.bfh-selectbox-option')
-      $options = this.$element.find('[role=option]')
-
-
-      $options.html('')
-      $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>')
-      for (var currency in this.currencyList) {
-        if(this.currencyList[currency].currencyflag) {
-            this.flag = this.currencyList[currency].currencyflag
-        }else{
-            this.flag = currency.substr(0,2)
+        for (currency in BFHCurrenciesList) {
+          if (BFHCurrenciesList.hasOwnProperty(currency)) {
+            if ($.inArray(currency, this.options.available) >= 0) {
+              currencies[currency] = BFHCurrenciesList[currency];
+            }
+          }
         }
-        if (this.options.flags === true) {
-          $options.append('<li><a tabindex="-1" href="#" data-option="' + currency +  '"><i class="icon-flag-' + this.flag + '"></i>' + this.currencyList[currency].label + '</a></li>')
-        } else {
-          $options.append('<li><a tabindex="-1" href="#" data-option="' + currency + '">' + this.currencyList[currency].label + '</a></li>')
-        }
-      }
 
-      $toggle.data('option', value)
-
-      if (value) {
-        if (this.options.flags === true) {
-          if(this.currencyList[value].currencyflag) {
-            this.flag = this.currencyList[value].currencyflag
-          }else{
-            this.flag = value.substr(0,2)
-          }       
-          $toggle.html('<i class="icon-flag-' + this.flag + '"></i> ' + this.currencyList[value].label)
-        } else {
-          $toggle.html(this.currencyList[value].label)
-        }
-      }
-
-      $input.val(value)
-    }
-
-    , displayCurrency: function () {
-      var value = this.options.currency
-
-      if(this.currencyList[value].currencyflag) {
-        this.flag = this.currencyList[value].currencyflag
-      }else{
-        this.flag = value.substr(0,2)
-      }   
-      if (this.options.flags === true) {
-        this.$element.html('<i class="icon-flag-' + this.flag + '"></i>' + this.currencyList[value].label)
+        return currencies;
       } else {
-        this.$element.html(this.currencyList[value].label)
+        return BFHCurrenciesList;
+      }
+    },
+
+    addCurrencies: function () {
+      var value,
+          currency,
+          currencies;
+
+      value = this.options.currency;
+      currencies = this.getCurrencies();
+
+      this.$element.html('');
+
+      if (this.options.blank === true) {
+        this.$element.append('<option value=""></option>');
+      }
+
+      for (currency in currencies) {
+        if (currencies.hasOwnProperty(currency)) {
+          this.$element.append('<option value="' + currency + '">' + currencies[currency].label + '</option>');
+        }
+      }
+
+      this.$element.val(value);
+    },
+
+
+    addBootstrapCurrencies: function() {
+      var $input,
+          $toggle,
+          $options,
+          value,
+          currency,
+          currencies,
+          flag;
+
+      value = this.options.currency;
+      $input = this.$element.find('input[type="hidden"]');
+      $toggle = this.$element.find('.bfh-selectbox-option');
+      $options = this.$element.find('[role=option]');
+      currencies = this.getCurrencies();
+
+      $options.html('');
+
+      if (this.options.blank === true) {
+        $options.append('<li><a tabindex="-1" href="#" data-option=""></a></li>');
+      }
+
+      for (currency in currencies) {
+        if (currencies.hasOwnProperty(currency)) {
+          if (this.options.flags === true) {
+            if (currencies[currency].currencyflag) {
+              flag = currencies[currency].currencyflag;
+            } else {
+              flag = currency.substr(0,2);
+            }
+            $options.append('<li><a tabindex="-1" href="#" data-option="' + currency +  '"><i class="glyphicon bfh-flag-' + flag + '"></i>' + currencies[currency].label + '</a></li>');
+          } else {
+            $options.append('<li><a tabindex="-1" href="#" data-option="' + currency + '">' + currencies[currency].label + '</a></li>');
+          }
+        }
+      }
+
+      this.$element.val(value);
+    },
+
+    displayCurrency: function () {
+      var value,
+          flag;
+
+      value = this.options.currency;
+
+      if (this.options.flags === true) {
+        if (BFHCurrenciesList[value].currencyflag) {
+          flag = BFHCurrenciesList[value].currencyflag;
+        } else {
+          flag = value.substr(0,2);
+        }
+        this.$element.html('<i class="glyphicon bfh-flag-' + flag + '"></i> ' + BFHCurrenciesList[value].label);
+      } else {
+        this.$element.html(BFHCurrenciesList[value].label);
       }
     }
 
-  }
+  };
 
 
- /* CURRENCY PLUGIN DEFINITION
-  * ======================= */
+  /* CURRENCY PLUGIN DEFINITION
+   * ======================= */
+
+  var old = $.fn.bfhcurrencies;
 
   $.fn.bfhcurrencies = function (option) {
     return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('bfhcurrencies')
-        , options = typeof option == 'object' && option
+      var $this,
+          data,
+          options;
 
-      if (!data) $this.data('bfhcurrencies', (data = new BFHCurrencies(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+      $this = $(this);
+      data = $this.data('bfhcurrencies');
+      options = typeof option === 'object' && option;
 
-  $.fn.bfhcurrencies.Constructor = BFHCurrencies
+      if (!data) {
+        $this.data('bfhcurrencies', (data = new BFHCurrencies(this, options)));
+      }
+      if (typeof option === 'string') {
+        data[option].call($this);
+      }
+    });
+  };
+
+  $.fn.bfhcurrencies.Constructor = BFHCurrencies;
 
   $.fn.bfhcurrencies.defaults = {
-    currency: "",
-    currencyList: "",
-    flags: false
-  }
+    currency: '',
+    available: '',
+    flags: false,
+    blank: true
+  };
 
 
- /* CURRENCY DATA-API
-  * ============== */
+  /* CURRENCY NO CONFLICT
+   * ========================== */
 
-  $(window).on('load', function () {
+  $.fn.bfhcurrencies.noConflict = function () {
+    $.fn.bfhcurrencies = old;
+    return this;
+  };
+
+
+  /* CURRENCY DATA-API
+   * ============== */
+
+  $(document).ready( function () {
     $('form select.bfh-currencies, span.bfh-currencies, div.bfh-currencies').each(function () {
-      var $currencies = $(this)
+      var $currencies;
 
-      $currencies.bfhcurrencies($currencies.data())
-    })
-  })
+      $currencies = $(this);
+
+      if ($currencies.hasClass('bfh-selectbox')) {
+        $currencies.bfhselectbox($currencies.data());
+      }
+      $currencies.bfhcurrencies($currencies.data());
+    });
+  });
 
 
 }(window.jQuery);
